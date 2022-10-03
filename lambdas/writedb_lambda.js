@@ -1,24 +1,22 @@
 var AWS = require('aws-sdk');
-var ddb = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
+var dynamo = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 
 exports.handler = async (event) => {
     try {
-        var obj = JSON.parse(event.body);
-        var ID = obj.id;
-        var NAME = obj.name;
+        var requestJSON = JSON.parse(event.body);
         var params = {
             TableName: 'user',
             Item: {
-                id: { S: ID },
-                username: { S: NAME }
+                id: { S: requestJSON.id },
+                username: { S: requestJSON.name }
             }
         };
         var data;
         var msg;
         try {
-            data = await ddb.putItem(params).promise();
-            console.log("Item entered successfully:", data);
-            msg = 'Item entered successfully';
+            data = await dynamo.putItem(params).promise();
+            console.log("User saved", data);
+            msg = 'User Saved';
         } catch (err) {
             console.log("Error: ", err);
             msg = err;
