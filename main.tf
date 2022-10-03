@@ -49,7 +49,7 @@ resource "aws_dynamodb_table" "user" {
 
 resource "aws_iam_role_policy" "write_policy" {
   name = "lambda_write_policy"
-  role = aws_iam_role.writeRole.id
+  role = aws_iam_role.write_role.id
 
   policy = jsonencode({
     "Version" : "2012-10-17",
@@ -70,7 +70,7 @@ resource "aws_iam_role_policy" "write_policy" {
 
 resource "aws_iam_role_policy" "read_policy" {
   name = "lambda_read_policy"
-  role = aws_iam_role.readRole.id
+  role = aws_iam_role.read_role.id
 
   policy = jsonencode({
     "Version" : "2012-10-17",
@@ -90,7 +90,7 @@ resource "aws_iam_role_policy" "read_policy" {
   })
 }
 
-resource "aws_iam_role" "writeRole" {
+resource "aws_iam_role" "write_role" {
   name = "myWriteRole"
 
   assume_role_policy = jsonencode({
@@ -108,7 +108,7 @@ resource "aws_iam_role" "writeRole" {
 
 }
 
-resource "aws_iam_role" "readRole" {
+resource "aws_iam_role" "read_role" {
   name = "myReadRole"
 
   assume_role_policy = jsonencode({
@@ -131,104 +131,104 @@ resource "aws_s3_bucket" "lambda_bucket" {
 }
 
 #Create lambdas function
-resource "aws_lambda_function" "writeLambda" {
+resource "aws_lambda_function" "write_lambda" {
 
-  function_name = "writeLambda"
+  function_name = "write_lambda"
   s3_bucket     = aws_s3_bucket.lambda_bucket.id
   s3_key        = aws_s3_object.lambdaf_write.key
-  role          = aws_iam_role.writeRole.arn
+  role          = aws_iam_role.write_role.arn
   handler       = "writedb_lambda.handler"
   runtime       = "nodejs12.x"
 }
 
-resource "aws_lambda_function" "readLambda" {
+resource "aws_lambda_function" "read_lambda" {
 
-  function_name = "readLambda"
+  function_name = "read_lambda"
   s3_bucket     = aws_s3_bucket.lambda_bucket.id
   s3_key        = aws_s3_object.lambdaf_read.key
-  role          = aws_iam_role.readRole.arn
+  role          = aws_iam_role.read_role.arn
   handler       = "readdb_lambda.handler"
   runtime       = "nodejs12.x"
 }
-
-resource "aws_api_gateway_rest_api" "apiLambda" {
+#creation of the api
+resource "aws_api_gateway_rest_api" "apigtw" {
   name = "APIgateway"
 
 }
-
-resource "aws_api_gateway_resource" "writeResource" {
-  rest_api_id = aws_api_gateway_rest_api.apiLambda.id
-  parent_id   = aws_api_gateway_rest_api.apiLambda.root_resource_id
+#creating the REST API
+resource "aws_api_gateway_resource" "write_resource" {
+  rest_api_id = aws_api_gateway_rest_api.apigtw.id
+  parent_id   = aws_api_gateway_rest_api.apigtw.root_resource_id
   path_part   = "writedb"
 
 }
 
-resource "aws_api_gateway_method" "writeMethod" {
-  rest_api_id   = aws_api_gateway_rest_api.apiLambda.id
-  resource_id   = aws_api_gateway_resource.writeResource.id
+resource "aws_api_gateway_method" "write_method" {
+  rest_api_id   = aws_api_gateway_rest_api.apigtw.id
+  resource_id   = aws_api_gateway_resource.write_resource.id
   http_method   = "POST"
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_resource" "readResource" {
-  rest_api_id = aws_api_gateway_rest_api.apiLambda.id
-  parent_id   = aws_api_gateway_rest_api.apiLambda.root_resource_id
+resource "aws_api_gateway_resource" "read_resource" {
+  rest_api_id = aws_api_gateway_rest_api.apigtw.id
+  parent_id   = aws_api_gateway_rest_api.apigtw.root_resource_id
   path_part   = "readdb"
 
 }
 
-resource "aws_api_gateway_method" "readMethod" {
-  rest_api_id   = aws_api_gateway_rest_api.apiLambda.id
-  resource_id   = aws_api_gateway_resource.readResource.id
+resource "aws_api_gateway_method" "read_method" {
+  rest_api_id   = aws_api_gateway_rest_api.apigtw.id
+  resource_id   = aws_api_gateway_resource.read_resource.id
   http_method   = "POST"
   authorization = "NONE"
 }
 
-resource "aws_api_gateway_integration" "writeInt" {
-  rest_api_id = aws_api_gateway_rest_api.apiLambda.id
-  resource_id = aws_api_gateway_resource.writeResource.id
-  http_method = aws_api_gateway_method.writeMethod.http_method
+resource "aws_api_gateway_integration" "write_integration" {
+  rest_api_id = aws_api_gateway_rest_api.apigtw.id
+  resource_id = aws_api_gateway_resource.write_resource.id
+  http_method = aws_api_gateway_method.write_method.http_method
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.writeLambda.invoke_arn
+  uri                     = aws_lambda_function.write_lambda.invoke_arn
 
 }
 
-resource "aws_api_gateway_integration" "readInt" {
-  rest_api_id = aws_api_gateway_rest_api.apiLambda.id
-  resource_id = aws_api_gateway_resource.readResource.id
-  http_method = aws_api_gateway_method.readMethod.http_method
+resource "aws_api_gateway_integration" "read_integration" {
+  rest_api_id = aws_api_gateway_rest_api.apigtw.id
+  resource_id = aws_api_gateway_resource.read_resource.id
+  http_method = aws_api_gateway_method.read_method.http_method
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.readLambda.invoke_arn
+  uri                     = aws_lambda_function.read_lambda.invoke_arn
 
 }
 
 resource "aws_api_gateway_deployment" "apideploy" {
-  depends_on = [aws_api_gateway_integration.writeInt, aws_api_gateway_integration.readInt]
+  depends_on = [aws_api_gateway_integration.write_integration, aws_api_gateway_integration.read_integration]
 
-  rest_api_id = aws_api_gateway_rest_api.apiLambda.id
+  rest_api_id = aws_api_gateway_rest_api.apigtw.id
   stage_name  = "Prod"
 }
 
 resource "aws_lambda_permission" "writePermission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.writeLambda.function_name
+  function_name = aws_lambda_function.write_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn = "${aws_api_gateway_rest_api.apiLambda.execution_arn}/Prod/POST/writedb"
+  source_arn = "${aws_api_gateway_rest_api.apigtw.execution_arn}/Prod/POST/writedb"
 
 }
 
 resource "aws_lambda_permission" "readPermission" {
   statement_id  = "AllowExecutionFromAPIGateway"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.readLambda.function_name
+  function_name = aws_lambda_function.read_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn = "${aws_api_gateway_rest_api.apiLambda.execution_arn}/Prod/POST/readdb"
+  source_arn = "${aws_api_gateway_rest_api.apigtw.execution_arn}/Prod/POST/readdb"
 
 }
