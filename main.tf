@@ -2,7 +2,6 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
-      
     }
   }
   cloud {
@@ -12,6 +11,7 @@ terraform {
       name = "gh-actions-challenge7"
     }
   }
+
 }
 provider "aws" {
   region = "us-east-1"
