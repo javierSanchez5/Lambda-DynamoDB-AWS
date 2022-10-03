@@ -2,17 +2,14 @@ terraform {
   required_providers {
     aws = {
       source = "hashicorp/aws"
+      Version = "~>3.27"
     }
   }
-  cloud {
-    organization = "jsanchezsv95"
 
-    workspaces {
-      name = "gh-actions-challenge7"
-    }
-  }
+  required_version = ">=0.14.9"
 
 }
+
 provider "aws" {
   region = "us-east-1"
 }
