@@ -1,17 +1,36 @@
 terraform {
   required_providers {
     aws = {
-      source = "hashicorp/aws"
-      version = "~>3.27"
+      source  = "hashicorp/aws"
+      version = "~>4.0"
     }
+    
   }
-
-  required_version = ">=0.14.9"
-
 }
 
 provider "aws" {
   region = "us-east-1"
+}
+#configure backend
+terraform {
+  backend "s3" {
+      bucket         = "my-terraform-bucket4533"
+      key            = "test/terraform.tfstate"
+      region         = "us-east-1"
+      dynamodb_table = "bucket-state-dynamodb-table"
+    }
+}
+#dynamoDB for the bucket
+resource "aws_dynamodb_table" "terraform_locks" {
+  name         = "bucket-state-dynamodb-table"
+  billing_mode = "PROVISIONED"
+  read_capacity  = "20"
+  write_capacity = "20"
+  hash_key     = "LockID"
+  attribute {
+    name = "LockID"
+    type = "S"
+  }
 }
 
 #Define DynamoDB
@@ -33,18 +52,18 @@ resource "aws_iam_role_policy" "write_policy" {
   role = aws_iam_role.writeRole.id
 
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "Stmt1604733000129",
-            "Action": [
-                "dynamodb:BatchWriteItem",
-                "dynamodb:PutItem",
-                "dynamodb:UpdateItem"
-            ],
-            "Effect": "Allow",
-            "Resource": "arn:aws:dynamodb:us-east-1:072834578119:table/user"
-        }
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "Stmt1604733000129",
+        "Action" : [
+          "dynamodb:BatchWriteItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem"
+        ],
+        "Effect" : "Allow",
+        "Resource" : "arn:aws:dynamodb:us-east-1:072834578119:table/user"
+      }
     ]
   })
 }
@@ -54,19 +73,19 @@ resource "aws_iam_role_policy" "read_policy" {
   role = aws_iam_role.readRole.id
 
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Sid": "Stmt1604732925387",
-            "Action": [
-                "dynamodb:BatchGetItem",
-                "dynamodb:GetItem",
-                "dynamodb:Query",
-                "dynamodb:Scan"
-            ],
-            "Effect": "Allow",
-            "Resource": "arn:aws:dynamodb:us-east-1:072834578119:table/user"
-        }
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Sid" : "Stmt1604732925387",
+        "Action" : [
+          "dynamodb:BatchGetItem",
+          "dynamodb:GetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ],
+        "Effect" : "Allow",
+        "Resource" : "arn:aws:dynamodb:us-east-1:072834578119:table/user"
+      }
     ]
   })
 }
@@ -75,15 +94,15 @@ resource "aws_iam_role" "writeRole" {
   name = "myWriteRole"
 
   assume_role_policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Principal": {
-                "Service": "lambda.amazonaws.com"
-            },
-            "Action": "sts:AssumeRole"
-        }
+    "Version" : "2012-10-17",
+    "Statement" : [
+      {
+        "Effect" : "Allow",
+        "Principal" : {
+          "Service" : "lambda.amazonaws.com"
+        },
+        "Action" : "sts:AssumeRole"
+      }
     ]
   })
 

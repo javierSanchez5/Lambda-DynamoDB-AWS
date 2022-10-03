@@ -1,3 +1,4 @@
+#zip lambdas function
 data "archive_file" "lambdaf_writedb" {
   type = "zip"
 
