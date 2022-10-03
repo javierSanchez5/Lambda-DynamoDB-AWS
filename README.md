@@ -12,3 +12,4 @@ Deploy a serverles application to AWS using terraform. Automate using Github Act
 - **S3 bucket** : storage lambdas function
 
 ## Diagram
+![Diagram](diagram.png)
